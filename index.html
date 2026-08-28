@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Interactive credit risk decisioning portfolio case study using the public UCI Default of Credit Card Clients dataset." />
+  <title>Credit Decision Lab | Interactive Risk Strategy Case Study</title>
+  <style>
+    :root{
+      --bg:#071018; --panel:#0d1823; --panel2:#101f2c; --text:#eef6fb; --muted:#91a7b6;
+      --line:#1e3545; --accent:#7ae1c3; --accent2:#8db6ff; --warn:#ffd37a; --bad:#ff8f95;
+      --good:#7ae1c3; --shadow:0 20px 70px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;background:
+      radial-gradient(900px 520px at 15% -10%,rgba(61,138,255,.20),transparent 60%),
+      radial-gradient(780px 540px at 105% 10%,rgba(72,210,166,.14),transparent 60%),
+      var(--bg); color:var(--text); font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    a{color:inherit}.wrap{max-width:1180px;margin:auto;padding:0 26px}
+    nav{position:sticky;top:0;z-index:10;backdrop-filter:blur(14px);background:rgba(7,16,24,.72);border-bottom:1px solid rgba(255,255,255,.05)}
+    nav .inner{height:66px;display:flex;align-items:center;justify-content:space-between;gap:22px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:760;letter-spacing:.2px}
+    .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent2),var(--accent));box-shadow:0 8px 25px rgba(122,225,195,.15)}
+    .navlinks{display:flex;gap:22px;color:var(--muted);font-size:13px}.navlinks a{text-decoration:none}.navlinks a:hover{color:var(--text)}
+    .hero{padding:88px 0 54px}.eyebrow{color:var(--accent);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
+    h1{font-size:clamp(42px,6.2vw,78px);line-height:.98;letter-spacing:-.052em;margin:15px 0 20px;max-width:980px}
+    .sub{font-size:19px;line-height:1.6;color:#b7c7d2;max-width:790px}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+    .btn{border:1px solid var(--line);background:#0e1b27;color:var(--text);padding:11px 16px;border-radius:12px;text-decoration:none;font-weight:700;cursor:pointer}
+    .btn.primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#061017;border:0}
+    .status{display:inline-flex;align-items:center;gap:8px;margin-top:26px;color:var(--muted);font-size:13px}
+    .dot{width:8px;height:8px;border-radius:99px;background:var(--warn);box-shadow:0 0 0 5px rgba(255,211,122,.08)}
+    .grid{display:grid;gap:16px}.stats{grid-template-columns:repeat(4,1fr);margin:28px 0 64px}
+    .card{background:linear-gradient(180deg,rgba(16,31,44,.95),rgba(11,24,35,.95));border:1px solid rgba(255,255,255,.07);border-radius:18px;box-shadow:var(--shadow)}
+    .stat{padding:20px}.stat .v{font-size:29px;font-weight:780;letter-spacing:-.035em}.stat .l{color:var(--muted);font-size:12px;margin-top:3px;text-transform:uppercase;letter-spacing:.08em}
+    section{padding:46px 0}.section-head{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:18px}
+    h2{font-size:31px;letter-spacing:-.035em;margin:0}.section-head p{color:var(--muted);max-width:600px;margin:0}
+    .lab{grid-template-columns:1.15fr .85fr}.pane{padding:24px}.pane h3{margin:0 0 6px;font-size:17px}.hint{color:var(--muted);font-size:13px}
+    .slider-row{display:grid;grid-template-columns:1fr 92px;gap:14px;align-items:center;margin:22px 0 8px}
+    input[type=range]{width:100%;accent-color:var(--accent)}.threshold{font-size:26px;font-weight:800;text-align:right}
+    .metrics{grid-template-columns:repeat(2,1fr);margin-top:20px}.metric{padding:15px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055)}
+    .metric b{font-size:23px;display:block}.metric span{color:var(--muted);font-size:12px}
+    .strategy{margin-top:18px;padding:16px;border-left:3px solid var(--accent);background:rgba(122,225,195,.05);border-radius:0 12px 12px 0}
+    .strategy strong{display:block;margin-bottom:4px}
+    canvas{width:100%;height:270px;display:block}
+    .segments{grid-template-columns:1fr 1fr}.table-card{overflow:hidden}.table-title{padding:18px 20px 10px;font-weight:750}
+    table{width:100%;border-collapse:collapse}th,td{padding:11px 20px;border-top:1px solid rgba(255,255,255,.055);text-align:left;font-size:13px}
+    th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.07em}.bar{height:7px;border-radius:99px;background:#193040;overflow:hidden;min-width:100px}.bar i{height:100%;display:block;background:linear-gradient(90deg,var(--accent),var(--warn),var(--bad))}
+    .drivers{grid-template-columns:.9fr 1.1fr}.driver-list{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+    .driver{display:grid;grid-template-columns:130px 1fr 58px;gap:10px;align-items:center;font-size:13px}.driver .track{height:9px;background:#183040;border-radius:99px;overflow:hidden}.driver .fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent2),var(--accent))}
+    .app-card{padding:24px}.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.control label{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+    select,input[type=number]{width:100%;background:#0a1721;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 11px}
+    .scorebox{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding:18px;background:rgba(255,255,255,.035);border-radius:13px}
+    .score{font-size:36px;font-weight:820;letter-spacing:-.04em}.pill{padding:7px 10px;border-radius:999px;font-size:12px;font-weight:800}
+    .economics{grid-template-columns:.9fr 1.1fr}
+    .econ-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+    .econ-result{padding:18px;border-radius:14px;background:rgba(141,182,255,.06);border:1px solid rgba(141,182,255,.16);margin-top:14px}
+    .econ-result .big{font-size:30px;font-weight:820;letter-spacing:-.04em}
+    .calibration{grid-template-columns:1.05fr .95fr}
+    .cal-table td:nth-child(n+2),.cal-table th:nth-child(n+2){text-align:right}
+    .recbox{padding:26px;border:1px solid rgba(122,225,195,.22);background:linear-gradient(135deg,rgba(122,225,195,.08),rgba(141,182,255,.055));border-radius:18px}
+    .recbox h3{font-size:23px;margin:4px 0 10px;letter-spacing:-.025em}
+    .recbox p{color:#c0d0da;margin:0;font-size:16px;line-height:1.65}
+    .method{grid-template-columns:repeat(3,1fr)}.method .card{padding:21px}.method .n{color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.09em}.method h3{margin:6px 0 8px}
+    footer{padding:44px 0 70px;color:var(--muted);font-size:12px}.footgrid{display:grid;grid-template-columns:1fr auto;gap:24px;border-top:1px solid rgba(255,255,255,.07);padding-top:26px}
+    .loading{position:fixed;inset:0;background:rgba(5,12,18,.88);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;z-index:100;transition:.35s}
+    .loading.hide{opacity:0;pointer-events:none}.loader{text-align:center;max-width:430px;padding:30px}.spinner{width:36px;height:36px;border:3px solid #234252;border-top-color:var(--accent);border-radius:50%;margin:0 auto 17px;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+    .error{color:var(--bad);margin-top:12px}
+    @media(max-width:840px){.stats{grid-template-columns:1fr 1fr}.lab,.segments,.drivers,.economics,.calibration{grid-template-columns:1fr}.method{grid-template-columns:1fr}.controls,.econ-controls{grid-template-columns:1fr 1fr}.navlinks{display:none}}
+    @media(max-width:520px){.stats,.metrics,.controls{grid-template-columns:1fr}.hero{padding-top:60px}.wrap{padding:0 18px}}
+  </style>
+</head>
+<body>
+<div class="loading" id="loading">
+  <div class="loader">
+    <div class="spinner"></div>
+    <h3>Building the risk lab in your browser</h3>
+    <div class="hint" id="loadText">Loading public UCI credit data…</div>
+    <div class="error" id="loadError"></div>
+  </div>
+</div>
+
+<nav><div class="wrap inner">
+  <div class="brand"><div class="mark"></div>Credit Decision Lab</div>
+  <div class="navlinks"><a href="#lab">Threshold Lab</a><a href="#economics">Economics</a><a href="#calibration">Calibration</a><a href="#segments">Portfolio</a><a href="#drivers">Drivers</a><a href="#method">Method</a></div>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">Risk Strategy × Machine Learning × Portfolio Decisions</div>
+  <h1>When does a better risk model become a better decision?</h1>
+  <div class="sub">An interactive credit-risk case study built on 30,000 public credit-card records. Move the policy threshold, add unit economics, inspect calibration and portfolio segments, and see how model performance translates into an operating credit strategy.</div>
+  <div class="hero-actions"><a class="btn primary" href="#lab">Explore the decision lab</a><a class="btn" href="#method">See methodology</a></div>
+  <div class="status"><span class="dot"></span><span id="modelStatus">Model initializes locally in your browser; no data is uploaded.</span></div>
+</div></header>
+
+<main class="wrap">
+  <div class="grid stats">
+    <div class="card stat"><div class="v" id="nObs">30,000</div><div class="l">Public records</div></div>
+    <div class="card stat"><div class="v" id="baseRate">—</div><div class="l">Observed default rate</div></div>
+    <div class="card stat"><div class="v" id="auc">—</div><div class="l">Holdout ROC-AUC</div></div>
+    <div class="card stat"><div class="v" id="features">10</div><div class="l">Modeled features</div></div>
+  </div>
+
+  <section id="lab">
+    <div class="section-head"><div><div class="eyebrow">01 — Decision policy</div><h2>Threshold Lab</h2></div><p>A model produces probabilities. Risk strategy decides what to do with them. Adjust the cutoff to see how the operating point changes.</p></div>
+    <div class="grid lab">
+      <div class="card pane">
+        <h3>Probability-of-default cutoff</h3><div class="hint">Accounts above the cutoff are flagged for intervention / decline.</div>
+        <div class="slider-row"><input id="thresholdSlider" type="range" min="5" max="80" value="35" step="1"><div class="threshold" id="thresholdText">35%</div></div>
+        <div class="grid metrics">
+          <div class="metric"><b id="capture">—</b><span>Default capture / recall</span></div>
+          <div class="metric"><b id="precision">—</b><span>Precision among flagged</span></div>
+          <div class="metric"><b id="approval">—</b><span>Approval / pass-through rate</span></div>
+          <div class="metric"><b id="fpr">—</b><span>False-positive rate</span></div>
+        </div>
+        <div class="strategy"><strong id="strategyTitle">Policy readout</strong><span id="strategyText">Move the threshold to generate a strategy interpretation.</span></div>
+      </div>
+      <div class="card pane">
+        <h3>Risk / growth frontier</h3><div class="hint">Each point is a possible policy threshold. The highlighted point is your current operating choice.</div>
+        <canvas id="frontierCanvas"></canvas>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="economics">
+    <div class="section-head"><div><div class="eyebrow">02 — Economics</div><h2>Optimize the policy, not the metric</h2></div><p>Model metrics do not tell you what a false negative or false positive costs. Add simple economics and the “best” threshold can change.</p></div>
+    <div class="grid economics">
+      <div class="card pane">
+        <h3>Decision assumptions</h3><div class="hint">Illustrative economics only. Adjust the assumptions to see how risk appetite changes the recommended cutoff.</div>
+        <div class="econ-controls">
+          <div class="control"><label>Exposure per approved account</label><input id="econEAD" type="number" min="100" max="50000" step="100" value="5000"></div>
+          <div class="control"><label>Loss given default</label><input id="econLGD" type="number" min="5" max="100" step="5" value="70"></div>
+          <div class="control"><label>Contribution if non-default</label><input id="econRevenue" type="number" min="10" max="5000" step="10" value="450"></div>
+        </div>
+        <div class="hint">Illustrative value = approved non-defaults × contribution − approved defaults × EAD × LGD. This is intentionally simplified and excludes funding cost, prepayment, utilization, acquisition cost, and lifetime value.</div>
+        <div class="econ-result"><div class="hint">Economically preferred cutoff under these assumptions</div><div class="big" id="optimalThreshold">—</div><div id="optimalDetail" class="hint">—</div></div>
+      </div>
+      <div class="card pane">
+        <h3>Policy value by threshold</h3><div class="hint">Higher is better under the selected assumptions. The highlighted point is the economically preferred cutoff.</div>
+        <canvas id="economicsCanvas"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section id="calibration">
+    <div class="section-head"><div><div class="eyebrow">03 — Calibration</div><h2>Does predicted risk resemble observed risk?</h2></div><p>A model can rank risk well without producing reliable probabilities. This holdout view compares average predicted PD with realized default by score band.</p></div>
+    <div class="grid calibration">
+      <div class="card pane"><h3>Calibration by predicted-risk decile</h3><div class="hint">Perfect calibration would place predicted and observed rates near the same diagonal.</div><canvas id="calibrationCanvas"></canvas></div>
+      <div class="card table-card"><div class="table-title">Holdout risk bands</div><table class="cal-table"><thead><tr><th>Band</th><th>Avg PD</th><th>Observed</th><th>N</th></tr></thead><tbody id="calibrationTable"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="recommendation">
+    <div class="section-head"><div><div class="eyebrow">04 — Executive decision</div><h2>Risk Strategy Recommendation</h2></div><p>The model is an input. The strategy recommendation connects ranking, calibration, economics, customer impact, and monitoring.</p></div>
+    <div class="recbox">
+      <div class="eyebrow">Illustrative recommendation</div>
+      <h3 id="recTitle">Calculating policy recommendation…</h3>
+      <p id="recText">—</p>
+    </div>
+  </section>
+
+  <section id="segments">
+    <div class="section-head"><div><div class="eyebrow">05 — Portfolio monitoring</div><h2>Where is risk concentrated?</h2></div><p>Aggregate views turn a row-level model into portfolio intelligence. Segments are computed directly from the public data.</p></div>
+    <div class="grid segments">
+      <div class="card table-card"><div class="table-title">By recent repayment status</div><table><thead><tr><th>Segment</th><th>Accounts</th><th>Default rate</th></tr></thead><tbody id="payTable"></tbody></table></div>
+      <div class="card table-card"><div class="table-title">By credit-limit band</div><table><thead><tr><th>Limit band</th><th>Accounts</th><th>Default rate</th></tr></thead><tbody id="limitTable"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="drivers">
+    <div class="section-head"><div><div class="eyebrow">06 — Model interpretation</div><h2>What is moving predicted risk?</h2></div><p>Standardized logistic coefficients provide a directional view of the model’s strongest signals. They are not causal effects.</p></div>
+    <div class="grid drivers">
+      <div class="card pane"><h3>Largest standardized coefficients</h3><div class="hint">Magnitude indicates influence in this fitted model; sign indicates direction.</div><div class="driver-list" id="driverList"></div></div>
+      <div class="card app-card">
+        <h3>Applicant / account sandbox</h3><div class="hint">Create a hypothetical profile and score it with the model trained in your browser.</div>
+        <div class="controls">
+          <div class="control"><label>Credit limit (NT$)</label><input id="aLimit" type="number" min="10000" max="1000000" step="10000" value="150000"></div>
+          <div class="control"><label>Age</label><input id="aAge" type="number" min="18" max="85" value="35"></div>
+          <div class="control"><label>Latest repayment status</label><select id="aPay0"><option value="-1">Paid duly</option><option value="0" selected>Revolving / on time code 0</option><option value="1">1 month late</option><option value="2">2 months late</option><option value="3">3 months late</option></select></div>
+          <div class="control"><label>Prior repayment status</label><select id="aPay2"><option value="-1">Paid duly</option><option value="0" selected>Code 0</option><option value="1">1 month late</option><option value="2">2 months late</option><option value="3">3 months late</option></select></div>
+          <div class="control"><label>Latest bill (NT$)</label><input id="aBill" type="number" min="0" max="1000000" step="5000" value="80000"></div>
+          <div class="control"><label>Latest payment (NT$)</label><input id="aPaid" type="number" min="0" max="1000000" step="5000" value="10000"></div>
+        </div>
+        <div class="scorebox"><div><div class="hint">Estimated probability of default</div><div class="score" id="sandboxScore">—</div></div><div class="pill" id="sandboxDecision">—</div></div>
+        <div class="hint" style="margin-top:12px">Educational portfolio demo only. This model is not calibrated or validated for production lending decisions.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="method">
+    <div class="section-head"><div><div class="eyebrow">07 — Method</div><h2>From public data to decision policy</h2></div><p>The model is deliberately simple so the business logic remains visible. The point is decision quality—not leaderboard optimization.</p></div>
+    <div class="grid method">
+      <div class="card"><div class="n">STEP 01</div><h3>Prepare</h3><div class="hint">Pull the public UCI-derived CSV, select 10 numeric credit / repayment features, standardize using the training sample, and create a deterministic holdout set.</div></div>
+      <div class="card"><div class="n">STEP 02</div><h3>Model</h3><div class="hint">Fit logistic regression with gradient descent on a bounded training sample. Produce out-of-sample PD estimates and ROC-AUC.</div></div>
+      <div class="card"><div class="n">STEP 03</div><h3>Decide</h3><div class="hint">Translate probabilities into an operating threshold. Compare recall, precision, false positives, and approval rate as the cutoff moves.</div></div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap footgrid">
+  <div><strong style="color:var(--text)">Credit Decision Lab</strong><br>Independent portfolio case study using public data. Not employer work and not a production credit policy.</div>
+  <div style="text-align:right">Data: Yeh, I. (2009), UCI Machine Learning Repository<br>Default of Credit Card Clients · CC BY 4.0 · DOI 10.24432/C55S3H</div>
+</div></footer>
+
+<script>
+const DATA_URL = "https://raw.githubusercontent.com/thomasXwang/UCI-Credit-card-defaults/master/UCI_Credit_Card.csv";
+const FEATURES = ["LIMIT_BAL","AGE","PAY_0","PAY_2","PAY_3","PAY_4","BILL_AMT1","BILL_AMT2","PAY_AMT1","PAY_AMT2"];
+const FRIENDLY = {"LIMIT_BAL":"Credit limit","AGE":"Age","PAY_0":"Latest payment status","PAY_2":"Prior payment status","PAY_3":"3-mo payment status","PAY_4":"4-mo payment status","BILL_AMT1":"Latest bill amount","BILL_AMT2":"Prior bill amount","PAY_AMT1":"Latest payment amount","PAY_AMT2":"Prior payment amount"};
+let rows=[], train=[], test=[], means=[], stds=[], weights=[], scored=[], frontier=[];
+
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/), headers=lines[0].replaceAll('"','').split(',');
+  return lines.slice(1).map(line=>{
+    const vals=line.split(','), o={}; headers.forEach((h,i)=>o[h]=Number(vals[i])); return o;
+  });
+}
+function sigmoid(z){ if(z>30)return 1;if(z<-30)return 0;return 1/(1+Math.exp(-z)); }
+function dot(a,b){let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s}
+function shuffleDeterministic(arr){
+  let seed=42; function rnd(){seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296}
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]} return arr;
+}
+function standardizeFit(data){
+  means=FEATURES.map(f=>data.reduce((a,r)=>a+r[f],0)/data.length);
+  stds=FEATURES.map((f,j)=>Math.sqrt(data.reduce((a,r)=>a+(r[f]-means[j])**2,0)/data.length)||1);
+}
+function xvec(r){return [1,...FEATURES.map((f,j)=>(r[f]-means[j])/stds[j])]}
+function fitLogistic(data, iters=140, lr=.075){
+  weights=new Array(FEATURES.length+1).fill(0);
+  for(let it=0;it<iters;it++){
+    const g=new Array(weights.length).fill(0);
+    for(const r of data){const x=xvec(r), y=r["default.payment.next.month"], p=sigmoid(dot(weights,x));for(let j=0;j<g.length;j++)g[j]+=(p-y)*x[j]}
+    for(let j=0;j<weights.length;j++){const reg=j===0?0:.002*weights[j];weights[j]-=lr*(g[j]/data.length+reg)}
+  }
+}
+function aucScore(items){
+  const s=[...items].sort((a,b)=>a.p-b.p);let rankSum=0,pos=0,neg=0;
+  for(let i=0;i<s.length;){let j=i+1;while(j<s.length&&s[j].p===s[i].p)j++;const avg=(i+1+j)/2;for(let k=i;k<j;k++){if(s[k].y===1){rankSum+=avg;pos++}else neg++}i=j}
+  return pos&&neg?(rankSum-pos*(pos+1)/2)/(pos*neg):.5;
+}
+function pct(x,d=1){return (100*x).toFixed(d)+"%"}
+function metricsAt(t){
+  let tp=0,fp=0,tn=0,fn=0;
+  scored.forEach(o=>{const flag=o.p>=t;if(flag&&o.y)tp++;else if(flag&&!o.y)fp++;else if(!flag&&o.y)fn++;else tn++});
+  return {tp,fp,tn,fn,recall:tp/(tp+fn||1),precision:tp/(tp+fp||1),approval:(tn+fn)/scored.length,fpr:fp/(fp+tn||1)};
+}
+function buildFrontier(){frontier=[];for(let i=5;i<=80;i++){const t=i/100,m=metricsAt(t);frontier.push({t,...m})}}
+function drawFrontier(currentT){
+  const c=document.getElementById("frontierCanvas"), dpr=window.devicePixelRatio||1, rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=270*dpr;
+  const ctx=c.getContext("2d");ctx.scale(dpr,dpr);const W=rect.width,H=270,pad={l:42,r:16,t:18,b:38};
+  ctx.clearRect(0,0,W,H);ctx.strokeStyle="#203949";ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pad.t+(H-pad.t-pad.b)*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke()}
+  ctx.fillStyle="#91a7b6";ctx.font="11px system-ui";ctx.fillText("Approval rate →",W-90,H-10);ctx.save();ctx.translate(12,90);ctx.rotate(-Math.PI/2);ctx.fillText("Default capture →",0,0);ctx.restore();
+  ctx.beginPath(); frontier.forEach((p,i)=>{const x=pad.l+p.approval*(W-pad.l-pad.r),y=H-pad.b-p.recall*(H-pad.t-pad.b);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.strokeStyle="#7ae1c3";ctx.lineWidth=2.2;ctx.stroke();
+  const p=frontier.reduce((a,b)=>Math.abs(b.t-currentT)<Math.abs(a.t-currentT)?b:a,frontier[0]);const x=pad.l+p.approval*(W-pad.l-pad.r),y=H-pad.b-p.recall*(H-pad.t-pad.b);
+  ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fillStyle="#8db6ff";ctx.fill();ctx.beginPath();ctx.arc(x,y,12,0,Math.PI*2);ctx.strokeStyle="rgba(141,182,255,.35)";ctx.stroke();
+}
+
+function policyValue(t){
+  const m=metricsAt(t), ead=Number(econEAD.value||5000), lgd=Number(econLGD.value||70)/100, rev=Number(econRevenue.value||450);
+  return {value:m.tn*rev-m.fn*ead*lgd,...m};
+}
+function updateEconomics(){
+  if(!scored.length)return;
+  let vals=[];for(let i=5;i<=80;i++){let t=i/100;vals.push({t,...policyValue(t)})}
+  const best=vals.reduce((a,b)=>b.value>a.value?b:a,vals[0]);
+  optimalThreshold.textContent=pct(best.t,0);
+  optimalDetail.textContent=`At this cutoff, the holdout pass-through rate is ${pct(best.approval)} and default capture is ${pct(best.recall)}.`;
+  drawEconomics(vals,best.t);updateRecommendation(best);
+}
+function drawEconomics(vals,bestT){
+  const c=economicsCanvas,dpr=window.devicePixelRatio||1,rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=270*dpr;
+  const ctx=c.getContext("2d");ctx.scale(dpr,dpr);const W=rect.width,H=270,p={l:48,r:16,t:18,b:38},mn=Math.min(...vals.map(x=>x.value)),mx=Math.max(...vals.map(x=>x.value)),span=mx-mn||1;
+  ctx.clearRect(0,0,W,H);ctx.strokeStyle="#203949";ctx.lineWidth=1;for(let i=0;i<=4;i++){let y=p.t+(H-p.t-p.b)*i/4;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(W-p.r,y);ctx.stroke()}
+  ctx.beginPath();vals.forEach((v,i)=>{let x=p.l+(v.t-.05)/.75*(W-p.l-p.r),y=H-p.b-(v.value-mn)/span*(H-p.t-p.b);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle="#8db6ff";ctx.lineWidth=2.2;ctx.stroke();
+  const b=vals.reduce((a,x)=>Math.abs(x.t-bestT)<Math.abs(a.t-bestT)?x:a,vals[0]),x=p.l+(b.t-.05)/.75*(W-p.l-p.r),y=H-p.b-(b.value-mn)/span*(H-p.t-p.b);
+  ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fillStyle="#7ae1c3";ctx.fill();ctx.fillStyle="#91a7b6";ctx.font="11px system-ui";ctx.fillText("PD cutoff →",W-72,H-10);
+}
+function calibrationBins(){
+  const sorted=[...scored].sort((a,b)=>a.p-b.p),bins=[];
+  for(let i=0;i<10;i++){const lo=Math.floor(i*sorted.length/10),hi=Math.floor((i+1)*sorted.length/10),b=sorted.slice(lo,hi);bins.push({band:`D${i+1}`,p:b.reduce((s,x)=>s+x.p,0)/b.length,y:b.reduce((s,x)=>s+x.y,0)/b.length,n:b.length})}
+  return bins;
+}
+function renderCalibration(){
+  const bins=calibrationBins();calibrationTable.innerHTML=bins.map(b=>`<tr><td>${b.band}</td><td>${pct(b.p)}</td><td>${pct(b.y)}</td><td>${b.n.toLocaleString()}</td></tr>`).join("");
+  const c=calibrationCanvas,dpr=window.devicePixelRatio||1,rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=270*dpr;const ctx=c.getContext("2d");ctx.scale(dpr,dpr);
+  const W=rect.width,H=270,p={l:42,r:16,t:18,b:38},mx=Math.max(.5,...bins.flatMap(b=>[b.p,b.y]))*1.05;
+  ctx.clearRect(0,0,W,H);ctx.strokeStyle="#203949";for(let i=0;i<=4;i++){let y=p.t+(H-p.t-p.b)*i/4;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(W-p.r,y);ctx.stroke()}
+  ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(p.l,H-p.b);ctx.lineTo(W-p.r,p.t);ctx.strokeStyle="#526b7a";ctx.stroke();ctx.setLineDash([]);
+  function line(key,color){ctx.beginPath();bins.forEach((b,i)=>{let x=p.l+i/9*(W-p.l-p.r),y=H-p.b-b[key]/mx*(H-p.t-p.b);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle=color;ctx.lineWidth=2.2;ctx.stroke();bins.forEach((b,i)=>{let x=p.l+i/9*(W-p.l-p.r),y=H-p.b-b[key]/mx*(H-p.t-p.b);ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill()})}
+  line("p","#8db6ff");line("y","#7ae1c3");ctx.fillStyle="#91a7b6";ctx.font="11px system-ui";ctx.fillText("Low predicted risk",p.l,H-10);ctx.fillText("High predicted risk",W-112,H-10);
+}
+function updateRecommendation(best){
+  const currentT=Number(thresholdSlider.value)/100,cur=metricsAt(currentT),diff=(currentT-best.t)*100;
+  recTitle.textContent=`Use ~${pct(best.t,0)} as the illustrative economic starting point — then validate stability and fairness before deployment.`;
+  let direction=Math.abs(diff)<1?"The current lab threshold is already near that operating point.":diff>0?`The current ${pct(currentT,0)} cutoff is more growth-leaning than the economic optimum under these assumptions.`:`The current ${pct(currentT,0)} cutoff is more conservative than the economic optimum under these assumptions.`;
+  recText.textContent=`${direction} At the selected threshold, the policy passes ${pct(cur.approval)} of holdout accounts and captures ${pct(cur.recall)} of observed defaults. I would not ship the cutoff from this analysis alone: next steps would include probability calibration, segment-level stability and fairness review, sensitivity to LGD/EAD and lifetime value, vintage monitoring, and a controlled champion/challenger rollout.`;
+}
+function updateThreshold(){
+  const t=Number(document.getElementById("thresholdSlider").value)/100,m=metricsAt(t);
+  document.getElementById("thresholdText").textContent=pct(t,0);document.getElementById("capture").textContent=pct(m.recall);document.getElementById("precision").textContent=pct(m.precision);document.getElementById("approval").textContent=pct(m.approval);document.getElementById("fpr").textContent=pct(m.fpr);
+  let title,txt;
+  if(m.recall>.75){title="High-capture posture";txt=`This cutoff catches ${pct(m.recall)} of observed defaults, but flags more good accounts. Use when loss avoidance is worth materially more than customer friction.`}
+  else if(m.approval>.85){title="Growth-leaning posture";txt=`This cutoff passes ${pct(m.approval)} of accounts. Default capture falls to ${pct(m.recall)}, so monitoring and downstream controls become more important.`}
+  else{title="Balanced operating point";txt=`The policy trades ${pct(m.recall)} default capture against a ${pct(m.approval)} pass-through rate. The right choice depends on unit economics, loss severity, and intervention cost.`}
+  document.getElementById("strategyTitle").textContent=title;document.getElementById("strategyText").textContent=txt;drawFrontier(t);updateSandbox();updateEconomics();
+}
+function groupTable(keyFn, targetId){
+  const g={};rows.forEach(r=>{const k=keyFn(r);if(!g[k])g[k]={n:0,d:0};g[k].n++;g[k].d+=r["default.payment.next.month"]});
+  const entries=Object.entries(g).sort((a,b)=>a[0].localeCompare(b[0]));
+  document.getElementById(targetId).innerHTML=entries.map(([k,v])=>`<tr><td>${k}</td><td>${v.n.toLocaleString()}</td><td><div style="display:flex;align-items:center;gap:9px"><span>${pct(v.d/v.n)}</span><div class="bar"><i style="width:${Math.min(100,(v.d/v.n)*180)}%"></i></div></div></td></tr>`).join("");
+}
+function renderDrivers(){
+  const vals=FEATURES.map((f,i)=>({f,w:weights[i+1]})).sort((a,b)=>Math.abs(b.w)-Math.abs(a.w)).slice(0,7), mx=Math.max(...vals.map(x=>Math.abs(x.w)));
+  document.getElementById("driverList").innerHTML=vals.map(x=>`<div class="driver"><span>${FRIENDLY[x.f]}</span><div class="track"><div class="fill" style="width:${100*Math.abs(x.w)/mx}%"></div></div><b>${x.w>=0?"+":""}${x.w.toFixed(2)}</b></div>`).join("");
+}
+function sandboxRow(){
+  const r={};FEATURES.forEach(f=>r[f]=means[FEATURES.indexOf(f)]);
+  r.LIMIT_BAL=Number(aLimit.value);r.AGE=Number(aAge.value);r.PAY_0=Number(aPay0.value);r.PAY_2=Number(aPay2.value);r.BILL_AMT1=Number(aBill.value);r.PAY_AMT1=Number(aPaid.value);return r;
+}
+function updateSandbox(){
+  if(!weights.length)return;const p=sigmoid(dot(weights,xvec(sandboxRow()))),t=Number(thresholdSlider.value)/100;
+  sandboxScore.textContent=pct(p);sandboxDecision.textContent=p>=t?"FLAG / INTERVENE":"PASS";sandboxDecision.style.background=p>=t?"rgba(255,143,149,.15)":"rgba(122,225,195,.15)";sandboxDecision.style.color=p>=t?"#ffb2b6":"#9af1d7";
+}
+async function init(){
+  try{
+    loadText.textContent="Loading 30,000 public records…";const res=await fetch(DATA_URL);if(!res.ok)throw new Error("Dataset request failed.");const text=await res.text();rows=parseCSV(text);nObs.textContent=rows.length.toLocaleString();
+    baseRate.textContent=pct(rows.reduce((a,r)=>a+r["default.payment.next.month"],0)/rows.length);
+    loadText.textContent="Training a lightweight logistic model locally…";await new Promise(r=>setTimeout(r,80));
+    const data=shuffleDeterministic([...rows]);train=data.slice(0,7000);test=data.slice(7000,14000);standardizeFit(train);fitLogistic(train);
+    scored=test.map(r=>({p:sigmoid(dot(weights,xvec(r))),y:r["default.payment.next.month"]}));auc.textContent=aucScore(scored).toFixed(3);buildFrontier();
+    groupTable(r=>r.PAY_0<=0?"A · Current / paid duly":r.PAY_0===1?"B · 1 month late":r.PAY_0===2?"C · 2 months late":"D · 3+ months late","payTable");
+    groupTable(r=>r.LIMIT_BAL<100000?"A · <100K":r.LIMIT_BAL<200000?"B · 100–199K":r.LIMIT_BAL<400000?"C · 200–399K":"D · 400K+","limitTable");
+    renderDrivers();renderCalibration();updateThreshold();document.querySelectorAll("#drivers input,#drivers select").forEach(el=>el.addEventListener("input",updateSandbox));document.querySelectorAll("#economics input").forEach(el=>el.addEventListener("input",updateEconomics));
+    thresholdSlider.addEventListener("input",updateThreshold);window.addEventListener("resize",()=>{drawFrontier(Number(thresholdSlider.value)/100);renderCalibration();updateEconomics()});
+    modelStatus.textContent="Public data loaded; model trained locally in this browser.";loading.classList.add("hide");
+  }catch(e){
+    loadError.textContent="Could not load the public dataset. If you opened this file locally and your browser blocked remote fetches, run a small local server (instructions are in README.md).";
+    console.error(e);
+  }
+}
+init();
+</script>
+</body>
+</html>
